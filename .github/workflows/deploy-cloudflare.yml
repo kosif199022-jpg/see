@@ -33,7 +33,16 @@ jobs:
         run: npm install
       - name: Verify
         run: npm test && npm run typecheck && npm run build
-      - name: Provision resources and deploy
+      - name: Ensure R2 evidence bucket
+        working-directory: apps/cloudflare
+        run: |
+          set -o pipefail
+          if npx wrangler r2 bucket list | grep -Fq "see-audit-evidence"; then
+            echo "R2 bucket see-audit-evidence already exists."
+          else
+            npx wrangler r2 bucket create see-audit-evidence
+          fi
+      - name: Deploy application
         working-directory: apps/cloudflare
         run: npx wrangler deploy
       - name: Apply D1 migrations

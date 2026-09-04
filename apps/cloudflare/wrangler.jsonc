@@ -8,8 +8,19 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "d1_databases": [{ "binding": "DB" }],
-  "r2_buckets": [{ "binding": "EVIDENCE" }],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "see-audit-db",
+      "database_id": "6aa72d95-6f4f-4854-9a39-ee9e6a4a432c"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE",
+      "bucket_name": "see-audit-evidence"
+    }
+  ],
   "vars": {
     "ALLOW_PUBLIC_DEMO": "true"
   }
