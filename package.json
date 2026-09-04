@@ -1,11 +1,16 @@
 {
   "name": "see-ai-audit-operating-system",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Advanced AI financial audit operating system",
+  "type": "module",
+  "description": "Traceable AI-assisted financial audit operating system",
   "workspaces": ["apps/*", "packages/*"],
+  "engines": { "node": ">=22.0.0" },
   "scripts": {
-    "dev": "echo 'workspace ready'",
-    "test": "echo 'tests pending'"
+    "dev": "npm --workspace @see/cloudflare run dev",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "npm --workspace @see/cloudflare run typecheck",
+    "build": "npm --workspace @see/cloudflare run build",
+    "deploy": "npm --workspace @see/cloudflare run deploy"
   }
 }
