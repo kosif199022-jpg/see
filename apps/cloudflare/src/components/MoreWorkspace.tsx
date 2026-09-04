@@ -55,6 +55,26 @@ export function MoreWorkspace({
     }, 'تم تسجيل Finding وربطه بالمهمة.');
   }
 
+  async function resolveFinding(id: string) {
+    await perform(async () => {
+      await api(`/api/findings/${id}/resolve`, { method: 'POST' });
+      await refresh();
+    }, 'تم حل الملاحظة وتحديث readiness.');
+  }
+
+  async function closeRisk(id: string) {
+    const rationale = window.prompt('مبرر إغلاق الخطر — يجب أن يوضح العمل المنجز والمراجعة البشرية.');
+    if (!rationale?.trim()) return;
+    await perform(async () => {
+      await phaseAApi.closeRisk(id, {
+        actorRole: 'manager',
+        actor: 'pilot-manager',
+        rationale: rationale.trim(),
+      });
+      await refresh();
+    }, 'تم إغلاق الخطر بقرار بشري ومبرر مسجل في audit trail.');
+  }
+
   async function createReport(status: 'draft' | 'approved') {
     const narrative = window.prompt(status === 'approved' ? 'ملاحظات اعتماد التقرير' : 'ملاحظات نسخة التقرير') ?? '';
     await perform(async () => {
@@ -74,8 +94,10 @@ export function MoreWorkspace({
     <section className="two-column">
       <div className="panel-glass"><SectionHead title="الأدلة" subtitle="R2 object + D1 metadata + SHA-256"/><label className="drop-zone"><span>⇧</span><strong>رفع دليل</strong><small>حد الـpilot الحالي 10 MB للملف</small><input type="file" onChange={(event) => event.target.files?.[0] && uploadEvidence(event.target.files[0])}/></label><div className="card-list compact-list">{legacy.evidence.map((row) => <div className="list-card" key={String(row.id)}><div><Badge tone="evidence">{String(row.status ?? 'registered')}</Badge><strong>{String(row.name ?? row.id)}</strong><small>SHA {String(row.sha256 ?? '').slice(0, 16)}… · {String(row.size ?? 0)} bytes</small></div><button className="ghost-action" onClick={() => downloadFile(`/api/evidence/${String(row.id)}/download`, String(row.name ?? 'evidence'))}>تنزيل</button></div>)}{legacy.evidence.length === 0 && <p className="muted">لا توجد أدلة مسجلة.</p>}</div></div>
 
-      <div className="panel-glass"><SectionHead title="النتائج والملاحظات" subtitle="Findings لا تُغلق تلقائيًا"/><form className="form-stack" onSubmit={addFinding}><label>العنوان<input name="title" required/></label><label>الشدة<select name="severity" defaultValue="medium"><option value="low">منخفض</option><option value="medium">متوسط</option><option value="high">مرتفع</option><option value="critical">حرج</option></select></label><label>الوصف<textarea name="description" required/></label><label>دليل مرتبط<select name="evidenceId"><option value="">بدون</option>{legacy.evidence.map((row) => <option key={String(row.id)} value={String(row.id)}>{String(row.name ?? row.id)}</option>)}</select></label><button>إضافة Finding</button></form><div className="card-list compact-list">{legacy.findings.map((row) => <div className="list-card" key={String(row.id)}><div><Badge tone={String(row.status) === 'resolved' ? 'ok' : String(row.severity) === 'high' || String(row.severity) === 'critical' ? 'bad' : 'warn'}>{String(row.status)}</Badge><strong>{String(row.title)}</strong><small>{String(row.severity)} · {String(row.description)}</small></div></div>)}</div></div>
+      <div className="panel-glass"><SectionHead title="النتائج والملاحظات" subtitle="Findings لا تُغلق تلقائيًا"/><form className="form-stack" onSubmit={addFinding}><label>العنوان<input name="title" required/></label><label>الشدة<select name="severity" defaultValue="medium"><option value="low">منخفض</option><option value="medium">متوسط</option><option value="high">مرتفع</option><option value="critical">حرج</option></select></label><label>الوصف<textarea name="description" required/></label><label>دليل مرتبط<select name="evidenceId"><option value="">بدون</option>{legacy.evidence.map((row) => <option key={String(row.id)} value={String(row.id)}>{String(row.name ?? row.id)}</option>)}</select></label><button>إضافة Finding</button></form><div className="card-list compact-list">{legacy.findings.map((row) => <div className="list-card" key={String(row.id)}><div><Badge tone={String(row.status) === 'resolved' ? 'ok' : String(row.severity) === 'high' || String(row.severity) === 'critical' ? 'bad' : 'warn'}>{String(row.status)}</Badge><strong>{String(row.title)}</strong><small>{String(row.severity)} · {String(row.description)}</small></div>{String(row.status) !== 'resolved' && <button className="small-action ghost" onClick={() => resolveFinding(String(row.id))}>حل الملاحظة</button>}</div>)}</div></div>
     </section>
+
+    <section className="panel-glass"><SectionHead title="بوابات الإقفال المهنية" subtitle="إغلاق الخطر قرار بشري مستقل عن التقييم الحتمي"/><div className="card-list">{legacy.risks.map((risk) => <div className="list-card" key={String(risk.id)}><div><Badge tone={String(risk.status) === 'closed' ? 'ok' : String(risk.level) === 'high' ? 'bad' : 'warn'}>{String(risk.level)} · {String(risk.status)}</Badge><strong>{String(risk.title)}</strong><small>Score {String(risk.score)} · {String(risk.rationale)}</small></div>{String(risk.status) !== 'closed' && <button className="small-action" onClick={() => closeRisk(String(risk.id))}>إغلاق الخطر</button>}</div>)}{legacy.risks.length === 0 && <EmptyState title="لا توجد مخاطر مسجلة">أنشئ المخاطر من غرفة المراجعة ثم اربطها بإجراءات العمل.</EmptyState>}</div><p className="indicator-note">الإغلاق يتطلب Manager/Partner/Quality Reviewer ومبررًا مسجلًا؛ AI لا يملك صلاحية الإغلاق.</p></section>
 
     <EvidenceTrace engagementId={engagementId} legacy={legacy} perform={perform}/>
 
