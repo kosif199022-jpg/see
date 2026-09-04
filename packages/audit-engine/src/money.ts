@@ -1,4 +1,4 @@
-import { normalizeArabicDigits } from './text-normalization';
+import { normalizeArabicDigits } from './text-normalization.ts';
 
 export const MONEY_ENGINE_VERSION = 'SEE-KOSIF-MONEY-v1' as const;
 
