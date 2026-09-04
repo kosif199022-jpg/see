@@ -1,5 +1,6 @@
 import { buildAnalyticsSummary } from '../../../../packages/audit-engine/src/analytics-summary';
 import { computeAuditReadiness } from '../../../../packages/audit-engine/src/readiness';
+import { buildKosifCommandMetrics } from './kosif-metrics';
 import { AUDIT_STAGES, type PhaseAEnv } from './types';
 
 const asNumber = (value: unknown) => Number(value ?? 0);
@@ -35,6 +36,9 @@ export async function buildCommandCenter(env: PhaseAEnv, engagementId: string) {
     pbcStats,
     reviewStats,
     procedureStats,
+    journalStats,
+    traceStats,
+    roundStats,
     latestCouncil,
     latestReport,
     recentEvents,
@@ -77,6 +81,26 @@ export async function buildCommandCenter(env: PhaseAEnv, engagementId: string) {
       LEFT JOIN procedure_runs pr ON pr.procedure_id = p.id
       WHERE p.engagement_id = ?
     `).bind(engagementId).first<Record<string, unknown>>(),
+    env.DB.prepare(`
+      SELECT
+        COALESCE((SELECT flagged_entries FROM journal_review_runs WHERE engagement_id = ? ORDER BY created_at DESC LIMIT 1), 0) AS flagged,
+        COALESCE((SELECT COUNT(*) FROM journal_review_items WHERE engagement_id = ? AND status = 'pending'), 0) AS pending
+    `).bind(engagementId, engagementId).first<Record<string, unknown>>(),
+    env.DB.prepare(`
+      SELECT COUNT(DISTINCT evidence_id) AS linked
+      FROM evidence_links WHERE engagement_id = ?
+    `).bind(engagementId).first<Record<string, unknown>>(),
+    env.DB.prepare(`
+      SELECT
+        COALESCE(SUM(CASE WHEN rd.status = 'complete' THEN 1 ELSE 0 END), 0) AS completed,
+        COALESCE(SUM(CASE WHEN rd.status = 'attention' THEN 1 ELSE 0 END), 0) AS attention
+      FROM round_decisions rd
+      JOIN (
+        SELECT round_code, MAX(version) AS version
+        FROM round_decisions WHERE engagement_id = ? GROUP BY round_code
+      ) latest ON latest.round_code = rd.round_code AND latest.version = rd.version
+      WHERE rd.engagement_id = ?
+    `).bind(engagementId, engagementId).first<Record<string, unknown>>(),
     env.DB.prepare('SELECT id, status, task, human_decision, created_at, reviewed_at FROM council_runs WHERE engagement_id = ? ORDER BY created_at DESC LIMIT 1')
       .bind(engagementId).first<Record<string, unknown>>(),
     env.DB.prepare('SELECT id, version, status, created_at, approved_at FROM report_versions WHERE engagement_id = ? ORDER BY version DESC LIMIT 1')
@@ -119,6 +143,15 @@ export async function buildCommandCenter(env: PhaseAEnv, engagementId: string) {
     openFindingCount: openFindings,
   });
 
+  const kosifMetrics = buildKosifCommandMetrics({
+    journalFlagged: asNumber(journalStats?.flagged),
+    journalPendingReview: asNumber(journalStats?.pending),
+    traceEvidence: evidenceCount,
+    traceLinkedEvidence: asNumber(traceStats?.linked),
+    completedRounds: asNumber(roundStats?.completed),
+    attentionRounds: asNumber(roundStats?.attention),
+  });
+
   const activeStage = currentAuditStage(String(engagement.status ?? 'planning'));
 
   return {
@@ -136,6 +169,7 @@ export async function buildCommandCenter(env: PhaseAEnv, engagementId: string) {
       openFindings,
       procedures: asNumber(procedureStats?.procedures),
       completedProcedureRuns: asNumber(procedureStats?.completed_runs),
+      ...kosifMetrics,
     },
     stages: AUDIT_STAGES.map((stage) => ({ id: stage, state: stage === activeStage ? 'current' : 'available' })),
     analytics: {
