@@ -1,0 +1,12 @@
+{
+  "company":"SEE Demo Industries",
+  "currency":"SAR",
+  "accounts":[
+    {"code":"1100","name":"Cash","type":"asset"},
+    {"code":"1200","name":"Receivables","type":"asset"},
+    {"code":"2100","name":"Payables","type":"liability"},
+    {"code":"4100","name":"Revenue","type":"income"},
+    {"code":"5100","name":"Expenses","type":"expense"}
+  ],
+  "auditAreas":["Revenue","Cash","Expenses","Controls"]
+}
