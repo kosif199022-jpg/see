@@ -1,4 +1,10 @@
-import { validateRiskClosure, validateWorkpaperTransition, type AuditActorRole, type WorkpaperStatus } from '../../../../packages/domain/src/lifecycle';
+import {
+  validateReviewNoteClear,
+  validateRiskClosure,
+  validateWorkpaperTransition,
+  type AuditActorRole,
+  type WorkpaperStatus,
+} from '../../../../packages/domain/src/lifecycle';
 import { auditEventStatement, phaseAId, phaseANow } from './events';
 import type { PhaseAEnv } from './types';
 
@@ -170,6 +176,18 @@ export async function handleFieldworkRoute(request: Request, env: PhaseAEnv, pat
     return respond({ id: workpaperTransition[1], from, to: input.to });
   }
 
+  const engagementReviewNotes = path.match(/^\/api\/v1\/engagements\/([^/]+)\/review-notes$/);
+  if (engagementReviewNotes && request.method === 'GET') {
+    const result = await env.DB.prepare(`
+      SELECT rn.*, w.title AS workpaper_title
+      FROM review_notes rn
+      LEFT JOIN workpapers w ON w.id = rn.workpaper_id
+      WHERE rn.engagement_id = ?
+      ORDER BY CASE rn.status WHEN 'open' THEN 0 ELSE 1 END, rn.created_at DESC
+    `).bind(engagementReviewNotes[1]).all();
+    return respond({ notes: result.results ?? [] });
+  }
+
   const reviewNote = path.match(/^\/api\/v1\/workpapers\/([^/]+)\/review-notes$/);
   if (reviewNote && request.method === 'POST') {
     const workpaper = await env.DB.prepare('SELECT * FROM workpapers WHERE id = ?').bind(reviewNote[1]).first<Record<string, unknown>>();
@@ -192,15 +210,18 @@ export async function handleFieldworkRoute(request: Request, env: PhaseAEnv, pat
   if (clearNote && request.method === 'POST') {
     const note = await env.DB.prepare('SELECT * FROM review_notes WHERE id = ?').bind(clearNote[1]).first<Record<string, unknown>>();
     if (!note) return problem('REVIEW_NOTE_NOT_FOUND', 'Review note not found', 404);
+    if (note.status === 'cleared') return problem('REVIEW_NOTE_ALREADY_CLEARED', 'Review note is already cleared', 409);
     const input = await jsonBody<{ actor?: string; actorRole?: AuditActorRole }>(request);
-    if (!input.actor?.trim() || input.actorRole === 'ai_agent') return problem('HUMAN_REVIEW_REQUIRED', 'Human reviewer is required to clear review notes', 409);
+    const decision = validateReviewNoteClear({ actorRole: input.actorRole ?? 'senior', actor: input.actor ?? '' });
+    if (!decision.allowed) return problem('REVIEW_NOTE_CLEAR_BLOCKED', 'Review note clearance is blocked', 409, decision);
+    const actor = input.actor!.trim();
     const at = phaseANow();
     await env.DB.batch([
       env.DB.prepare("UPDATE review_notes SET status = 'cleared', cleared_by = ?, cleared_at = ? WHERE id = ? AND status = 'open'")
-        .bind(input.actor.trim(), at, clearNote[1]),
+        .bind(actor, at, clearNote[1]),
       auditEventStatement(env, {
         engagementId: String(note.engagement_id), entityType: 'review_note', entityId: clearNote[1], action: 'review_note.cleared',
-        actor: input.actor.trim(), occurredAt: at, payload: { workpaperId: note.workpaper_id },
+        actor, occurredAt: at, payload: { workpaperId: note.workpaper_id },
       }),
     ]);
     return respond({ id: clearNote[1], status: 'cleared' });
