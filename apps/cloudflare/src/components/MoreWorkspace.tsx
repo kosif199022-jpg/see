@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, downloadFile, phaseAApi } from '../api';
+import { canRequestReportApproval } from '../reporting-readiness';
 import type { CommandCenter, LegacyDashboard, Perform, ReportVersion } from '../types';
 import { Badge, EmptyState, SectionHead } from './Status';
 import { EvidenceTrace } from './EvidenceTrace';
@@ -24,6 +25,7 @@ export function MoreWorkspace({
   const [reports, setReports] = useState<ReportVersion[]>([]);
   const [tokenDraft, setTokenDraft] = useState(accessToken);
   const [loading, setLoading] = useState(false);
+  const reportApprovalAvailable = canRequestReportApproval(commandCenter.readiness.blockers);
 
   async function reloadReports() {
     setLoading(true);
@@ -78,7 +80,7 @@ export function MoreWorkspace({
     <EvidenceTrace engagementId={engagementId} legacy={legacy} perform={perform}/>
 
     <section className="two-column">
-      <div className="panel-glass"><SectionHead title="مركز التقرير" subtitle="كل نسخة تحفظ readiness snapshot مستقل" action={<div className="button-row"><button className="ghost-action" onClick={() => createReport('draft')}>نسخة Draft</button><button onClick={() => createReport('approved')} disabled={!commandCenter.readiness.readyForArchive}>اعتماد Partner</button></div>}/>{loading ? <div className="loading-line">تحميل النسخ…</div> : reports.length ? <div className="card-list">{reports.map((report) => <div className="list-card" key={report.id}><div><Badge tone={report.status === 'approved' ? 'ok' : 'warn'}>{report.status}</Badge><strong>Report v{report.version}</strong><small>{String(report.created_at ?? '').slice(0, 16).replace('T', ' ')} · {String(report.created_by ?? '')}</small></div><span className="version-chip">v{report.version}</span></div>)}</div> : <EmptyState title="لا توجد نسخة تقرير">أنشئ draft بعد اكتمال ما يكفي من العمل لالتقاط حالة الجاهزية.</EmptyState>}<p className="indicator-note">SEE لا يصدر رأيًا نظاميًا تلقائيًا. اعتماد النسخة يتطلب Partner والبوابات المهنية.</p></div>
+      <div className="panel-glass"><SectionHead title="مركز التقرير" subtitle="كل نسخة تحفظ readiness snapshot مستقل" action={<div className="button-row"><button className="ghost-action" onClick={() => createReport('draft')}>نسخة Draft</button><button onClick={() => createReport('approved')} disabled={!reportApprovalAvailable}>اعتماد Partner</button></div>}/>{loading ? <div className="loading-line">تحميل النسخ…</div> : reports.length ? <div className="card-list">{reports.map((report) => <div className="list-card" key={report.id}><div><Badge tone={report.status === 'approved' ? 'ok' : 'warn'}>{report.status}</Badge><strong>Report v{report.version}</strong><small>{String(report.created_at ?? '').slice(0, 16).replace('T', ' ')} · {String(report.created_by ?? '')}</small></div><span className="version-chip">v{report.version}</span></div>)}</div> : <EmptyState title="لا توجد نسخة تقرير">أنشئ draft بعد اكتمال ما يكفي من العمل لالتقاط حالة الجاهزية.</EmptyState>}<p className="indicator-note">SEE لا يصدر رأيًا نظاميًا تلقائيًا. اعتماد النسخة يتطلب Partner والبوابات المهنية.</p></div>
 
       <div className="panel-glass"><SectionHead title="إعدادات الوصول" subtitle="Session-only browser token + server-side authority"/><form className="form-stack" onSubmit={(event) => { event.preventDefault(); onSaveToken(tokenDraft.trim()); }}><label>APP_ACCESS_TOKEN<input type="password" value={tokenDraft} onChange={(event) => setTokenDraft(event.target.value)} placeholder="اتركه فارغًا إذا لم يفعّل على الخادم"/></label><button>حفظ للجلسة</button><button type="button" className="ghost-action" onClick={() => { setTokenDraft(''); onSaveToken(''); }}>مسح التوكن</button></form><div className="build-card"><span>SEE Phase A</span><strong>API v1 + compatibility</strong><small>React / Cloudflare Worker / D1 / R2</small></div></div>
     </section>
