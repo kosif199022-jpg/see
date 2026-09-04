@@ -1,4 +1,4 @@
-import { validateWorkpaperTransition, type AuditActorRole, type WorkpaperStatus } from '../../../../packages/domain/src/lifecycle';
+import { validateRiskClosure, validateWorkpaperTransition, type AuditActorRole, type WorkpaperStatus } from '../../../../packages/domain/src/lifecycle';
 import { auditEventStatement, phaseAId, phaseANow } from './events';
 import type { PhaseAEnv } from './types';
 
@@ -8,6 +8,28 @@ const problem = (code: string, message: string, status = 400, details?: unknown)
 async function jsonBody<T>(request: Request): Promise<T> { return (await request.json()) as T; }
 
 export async function handleFieldworkRoute(request: Request, env: PhaseAEnv, path: string): Promise<Response | null> {
+  const riskClose = path.match(/^\/api\/v1\/risks\/([^/]+)\/close$/);
+  if (riskClose && request.method === 'POST') {
+    const risk = await env.DB.prepare('SELECT * FROM risks WHERE id = ?').bind(riskClose[1]).first<Record<string, unknown>>();
+    if (!risk) return problem('RISK_NOT_FOUND', 'Risk not found', 404);
+    if (risk.status === 'closed') return problem('RISK_ALREADY_CLOSED', 'Risk is already closed', 409);
+    const input = await jsonBody<{ actorRole?: AuditActorRole; actor?: string; rationale?: string }>(request);
+    if (!input.actorRole) return problem('RISK_CLOSURE_ROLE_REQUIRED', 'actorRole is required');
+    const decision = validateRiskClosure({ actorRole: input.actorRole, rationale: input.rationale ?? '' });
+    if (!decision.allowed) return problem('RISK_CLOSURE_BLOCKED', 'Risk closure is blocked', 409, decision);
+    const actor = input.actor?.trim() || `pilot:${input.actorRole}`;
+    const rationale = input.rationale!.trim();
+    const at = phaseANow();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE risks SET status = 'closed' WHERE id = ? AND status != 'closed'").bind(riskClose[1]),
+      auditEventStatement(env, {
+        engagementId: String(risk.engagement_id), entityType: 'risk', entityId: riskClose[1], action: 'risk.closed', actor, occurredAt: at,
+        payload: { previousStatus: risk.status, rationale, score: risk.score, level: risk.level },
+      }),
+    ]);
+    return respond({ id: riskClose[1], status: 'closed' });
+  }
+
   const procedureList = path.match(/^\/api\/v1\/engagements\/([^/]+)\/procedures$/);
   if (procedureList && request.method === 'GET') {
     const result = await env.DB.prepare(`
