@@ -4,6 +4,7 @@ import {
   summarizeAudit,
   validateTrialBalance,
 } from '../../../packages/audit-engine/src/cloudflare-core';
+import { buildPhaseADemoSeed } from './phase-a/demo-seed';
 
 interface Env {
   DB: D1Database;
@@ -111,8 +112,9 @@ async function createDemo(env: Env) {
   await env.DB.prepare(`INSERT INTO materiality_assessments (id, engagement_id, benchmark_minor, basis_points, amount_minor, rationale, status, version, approved_at, created_at) VALUES (?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?)`)
     .bind(id(), engagementId, 50_000_000, 500, Number(materiality.amount), '5% of revenue for pilot demonstration', materiality.version, createdAt, createdAt).run();
   const risk = scoreRisk({ likelihood: 4, magnitude: 5, controlReliance: 2, rationale: 'Revenue recognition has elevated inherent risk.' });
+  const riskId = id();
   await env.DB.prepare(`INSERT INTO risks (id, engagement_id, title, likelihood, magnitude, control_reliance, score, level, rationale, status, version, approved_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)`)
-    .bind(id(), engagementId, 'Revenue recognition', 4, 5, 2, risk.score, risk.level, risk.rationale, risk.version, createdAt, createdAt).run();
+    .bind(riskId, engagementId, 'Revenue recognition', 4, 5, 2, risk.score, risk.level, risk.rationale, risk.version, createdAt, createdAt).run();
   const evidenceId = id();
   const evidenceText = new TextEncoder().encode('Demo evidence only. Replace with client-supported evidence in a secured deployment.');
   const hash = await crypto.subtle.digest('SHA-256', evidenceText);
@@ -123,7 +125,42 @@ async function createDemo(env: Env) {
     .bind(evidenceId, engagementId, 'demo-evidence.txt', objectKey, sha256, evidenceText.byteLength, 'text/plain', createdAt).run();
   await env.DB.prepare(`INSERT INTO findings (id, engagement_id, title, severity, description, status, evidence_id, created_at) VALUES (?, ?, ?, ?, ?, 'open', ?, ?)`)
     .bind(id(), engagementId, 'Revenue cut-off requires completion', 'medium', 'Complete period-end cut-off testing before closure.', evidenceId, createdAt).run();
-  await event(env, engagementId, 'engagement', engagementId, 'demo_created', { source: 'SEE Cloudflare MVP' });
+
+  const phaseA = buildPhaseADemoSeed({
+    engagementId,
+    riskId,
+    evidenceId,
+    createdAt,
+    evidenceName: 'demo-evidence.txt',
+    evidenceSha256: sha256,
+    evidenceStatus: 'registered',
+  });
+  await env.DB.batch([
+    env.DB.prepare(`INSERT INTO pbc_requests (id, engagement_id, title, description, priority, status, due_at, evidence_id, revision, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.pbc.id, phaseA.pbc.engagementId, phaseA.pbc.title, phaseA.pbc.description, phaseA.pbc.priority, phaseA.pbc.status, phaseA.pbc.dueAt, phaseA.pbc.evidenceId, phaseA.pbc.revision, phaseA.pbc.createdBy, phaseA.pbc.createdAt, phaseA.pbc.updatedAt),
+    env.DB.prepare(`INSERT INTO procedures (id, engagement_id, risk_id, title, objective, procedure_type, status, owner, version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.procedure.id, phaseA.procedure.engagementId, phaseA.procedure.riskId, phaseA.procedure.title, phaseA.procedure.objective, phaseA.procedure.procedureType, phaseA.procedure.status, phaseA.procedure.owner, phaseA.procedure.version, phaseA.procedure.createdAt),
+    env.DB.prepare(`INSERT INTO procedure_runs (id, procedure_id, engagement_id, result, conclusion, status, performed_by, performed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.procedureRun.id, phaseA.procedureRun.procedureId, phaseA.procedureRun.engagementId, phaseA.procedureRun.result, phaseA.procedureRun.conclusion, phaseA.procedureRun.status, phaseA.procedureRun.performedBy, phaseA.procedureRun.performedAt, phaseA.procedureRun.createdAt),
+    env.DB.prepare(`INSERT INTO workpapers (id, engagement_id, procedure_id, title, status, current_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.workpaper.id, phaseA.workpaper.engagementId, phaseA.workpaper.procedureId, phaseA.workpaper.title, phaseA.workpaper.status, phaseA.workpaper.currentVersion, phaseA.workpaper.createdAt),
+    env.DB.prepare(`INSERT INTO workpaper_versions (id, workpaper_id, version, content, conclusion, preparer, reviewer, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.workpaperVersion.id, phaseA.workpaperVersion.workpaperId, phaseA.workpaperVersion.version, phaseA.workpaperVersion.content, phaseA.workpaperVersion.conclusion, phaseA.workpaperVersion.preparer, phaseA.workpaperVersion.reviewer, phaseA.workpaperVersion.status, phaseA.workpaperVersion.createdAt),
+    env.DB.prepare(`INSERT INTO review_notes (id, engagement_id, workpaper_id, note, status, created_by, cleared_by, created_at, cleared_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.reviewNote.id, phaseA.reviewNote.engagementId, phaseA.reviewNote.workpaperId, phaseA.reviewNote.note, phaseA.reviewNote.status, phaseA.reviewNote.createdBy, phaseA.reviewNote.clearedBy, phaseA.reviewNote.createdAt, phaseA.reviewNote.clearedAt),
+    env.DB.prepare(`INSERT INTO evidence_links (id, engagement_id, evidence_id, target_type, target_id, relation, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.evidenceLink.id, phaseA.evidenceLink.engagementId, phaseA.evidenceLink.evidenceId, phaseA.evidenceLink.targetType, phaseA.evidenceLink.targetId, phaseA.evidenceLink.relation, phaseA.evidenceLink.createdBy, phaseA.evidenceLink.createdAt),
+    env.DB.prepare(`INSERT INTO council_runs (id, engagement_id, status, task, evidence_snapshot_json, synthesis_json, human_decision, human_rationale, created_by, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(phaseA.councilRun.id, phaseA.councilRun.engagementId, phaseA.councilRun.status, phaseA.councilRun.task, phaseA.councilRun.evidenceSnapshotJson, phaseA.councilRun.synthesisJson, phaseA.councilRun.humanDecision, phaseA.councilRun.humanRationale, phaseA.councilRun.createdBy, phaseA.councilRun.createdAt, phaseA.councilRun.reviewedAt),
+  ]);
+  await event(env, engagementId, 'engagement', engagementId, 'demo_created', { source: 'SEE Cloudflare MVP', phaseA: true });
+  await event(env, engagementId, 'engagement', engagementId, 'phase_a_demo_seeded', {
+    pbcId: phaseA.pbc.id,
+    procedureId: phaseA.procedure.id,
+    workpaperId: phaseA.workpaper.id,
+    councilRunId: phaseA.councilRun.id,
+    approvedReportSeeded: false,
+  });
   return engagementId;
 }
 
