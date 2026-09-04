@@ -31,6 +31,28 @@ async function closurePrerequisites(env: PhaseAEnv, engagementId: string): Promi
 }
 
 export async function handleLifecycleRoute(request: Request, env: PhaseAEnv, path: string): Promise<Response | null> {
+  if (path === '/api/v1/engagements' && request.method === 'GET') {
+    const result = await env.DB.prepare('SELECT * FROM engagements ORDER BY created_at DESC').all();
+    return respond({ engagements: result.results ?? [] });
+  }
+
+  if (path === '/api/v1/engagements' && request.method === 'POST') {
+    const input = await jsonBody<{ name?: string; clientName?: string; periodEnd?: string; actor?: string }>(request);
+    if (!input.name?.trim() || !input.clientName?.trim() || !input.periodEnd?.trim()) {
+      return problem('ENGAGEMENT_INPUT_REQUIRED', 'name, clientName and periodEnd are required');
+    }
+    const engagementId = phaseAId(); const at = phaseANow(); const actor = input.actor?.trim() || 'pilot-user';
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO engagements (id, name, client_name, period_end, status, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(engagementId, input.name.trim(), input.clientName.trim(), input.periodEnd.trim(), 'draft', at),
+      auditEventStatement(env, {
+        engagementId, entityType: 'engagement', entityId: engagementId, action: 'engagement.created', actor, occurredAt: at,
+        payload: { status: 'draft', name: input.name.trim() },
+      }),
+    ]);
+    return respond({ id: engagementId, status: 'draft' }, 201);
+  }
+
   const match = path.match(/^\/api\/v1\/engagements\/([^/]+)\/transitions$/);
   if (!match || request.method !== 'POST') return null;
 
