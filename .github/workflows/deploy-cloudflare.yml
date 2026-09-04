@@ -55,3 +55,17 @@ jobs:
       - name: Deploy migrated application
         working-directory: apps/cloudflare
         run: npx wrangler deploy
+      - name: Verify production health
+        run: |
+          set -euo pipefail
+          url="https://see-audit.kosif199022.workers.dev/api/health"
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error "$url" | grep -Fq '"status":"ok"'; then
+              echo "SEE production health check passed."
+              exit 0
+            fi
+            echo "Health check attempt $attempt failed; retrying..."
+            sleep 5
+          done
+          echo "::error::SEE production health check failed after deployment."
+          exit 1
