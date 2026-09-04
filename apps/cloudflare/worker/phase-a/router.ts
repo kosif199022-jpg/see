@@ -1,9 +1,12 @@
 import { handleCouncilRoute } from './council';
 import { buildCommandCenter } from './dashboard';
 import { handleFieldworkRoute } from './fieldwork';
+import { handleJournalRoute } from './journal';
 import { handleLifecycleRoute } from './lifecycle';
 import { handlePbcRoute } from './pbc';
 import { handleReportingRoute } from './reporting';
+import { handleRoundsRoute } from './rounds';
+import { handleStandardsRoute } from './standards';
 import { handleTraceRoute } from './trace';
 import type { PhaseAEnv } from './types';
 
@@ -30,6 +33,9 @@ export async function handlePhaseA(request: Request, env: PhaseAEnv): Promise<Re
     handleLifecycleRoute,
     handlePbcRoute,
     handleFieldworkRoute,
+    handleJournalRoute,
+    handleRoundsRoute,
+    handleStandardsRoute,
     handleTraceRoute,
     handleCouncilRoute,
     handleReportingRoute,
