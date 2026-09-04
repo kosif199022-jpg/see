@@ -58,6 +58,11 @@ export interface ActorTransitionInput {
   actorRole: AuditActorRole;
 }
 
+export interface RiskClosureInput {
+  actorRole: AuditActorRole;
+  rationale: string;
+}
+
 const ENGAGEMENT_NEXT: Record<EngagementStatus, readonly EngagementStatus[]> = {
   draft: ['acceptance', 'on_hold'],
   acceptance: ['planning', 'on_hold'],
@@ -186,5 +191,15 @@ export function validateCouncilTransition(
     return deny('HUMAN_REVIEW_REQUIRED');
   }
 
+  return allow();
+}
+
+export function validateRiskClosure(input: RiskClosureInput): TransitionDecision {
+  if (!['partner', 'manager', 'quality_reviewer'].includes(input.actorRole)) {
+    return deny('RISK_CLOSURE_HUMAN_REQUIRED');
+  }
+  if (!input.rationale.trim()) {
+    return deny('RISK_CLOSURE_RATIONALE_REQUIRED');
+  }
   return allow();
 }
