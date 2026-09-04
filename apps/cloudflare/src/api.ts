@@ -5,6 +5,7 @@ import type {
   PbcRequest,
   Procedure,
   ReportVersion,
+  ReviewNote,
   TraceGraph,
   Workpaper,
 } from './types';
@@ -87,6 +88,7 @@ export const phaseAApi = {
   createWorkpaper: (engagementId: string, input: Record<string, unknown>) => api(`/api/v1/engagements/${engagementId}/workpapers`, { method: 'POST', body: JSON.stringify(input) }),
   newWorkpaperVersion: (id: string, input: Record<string, unknown>) => api(`/api/v1/workpapers/${id}/versions`, { method: 'POST', body: JSON.stringify(input) }),
   transitionWorkpaper: (id: string, input: Record<string, unknown>) => api(`/api/v1/workpapers/${id}/transitions`, { method: 'POST', body: JSON.stringify(input) }),
+  reviewNotes: (engagementId: string) => api<{ notes: ReviewNote[] }>(`/api/v1/engagements/${engagementId}/review-notes`),
   addReviewNote: (id: string, input: Record<string, unknown>) => api(`/api/v1/workpapers/${id}/review-notes`, { method: 'POST', body: JSON.stringify(input) }),
   clearReviewNote: (id: string, input: Record<string, unknown>) => api(`/api/v1/review-notes/${id}/clear`, { method: 'POST', body: JSON.stringify(input) }),
   trace: (engagementId: string) => api<TraceGraph>(`/api/v1/engagements/${engagementId}/trace`),
