@@ -1,0 +1,27 @@
+{
+  "name": "SEE — Audit Operating System",
+  "short_name": "SEE Audit",
+  "description": "نظام تشغيل مراجعة عربي محكوم بالأدلة والقرار البشري.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f5ff",
+  "theme_color": "#4c1d95",
+  "lang": "ar",
+  "dir": "rtl",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

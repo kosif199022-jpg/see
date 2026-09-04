@@ -1,11 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError, getAccessToken, phaseAApi, setAccessToken } from './api';
-import { AnalyticsCenter } from './components/AnalyticsCenter';
 import { AppShell } from './components/AppShell';
 import { AuditWorkspace } from './components/AuditWorkspace';
 import { CommandCenter } from './components/CommandCenter';
 import { CouncilWorkspace } from './components/CouncilWorkspace';
+import { JournalWorkspace } from './components/JournalWorkspace';
 import { MoreWorkspace } from './components/MoreWorkspace';
+import { ReviewNotesPanel } from './components/ReviewNotesPanel';
+import { RoundsWorkspace } from './components/RoundsWorkspace';
+import { StandardsWorkspace } from './components/StandardsWorkspace';
+import { defaultModuleForWorkspace, workspaceForDesktopModule, type DesktopModuleId } from './navigation';
 import type { CommandCenter as CommandCenterDto, Engagement, LegacyDashboard, PrimaryWorkspace } from './types';
 
 function describeError(cause: unknown) {
@@ -18,6 +22,7 @@ function describeError(cause: unknown) {
 
 export default function App() {
   const [workspace, setWorkspace] = useState<PrimaryWorkspace>('home');
+  const [activeModule, setActiveModule] = useState<DesktopModuleId>('command-center');
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [legacy, setLegacy] = useState<LegacyDashboard | null>(null);
@@ -26,6 +31,16 @@ export default function App() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [accessToken, setAccessTokenState] = useState(getAccessToken());
+
+  function navigateWorkspace(value: PrimaryWorkspace) {
+    setWorkspace(value);
+    setActiveModule(defaultModuleForWorkspace(value));
+  }
+
+  function navigateModule(value: DesktopModuleId) {
+    setActiveModule(value);
+    setWorkspace(workspaceForDesktopModule(value));
+  }
 
   async function refreshData(id: string) {
     const [legacyData, commandData] = await Promise.all([
@@ -59,7 +74,7 @@ export default function App() {
     await perform(async () => {
       const result = await api<{ id: string }>('/api/demo', { method: 'POST' });
       await refreshEngagements(result.id);
-      setWorkspace('home');
+      navigateWorkspace('home');
     }, 'تم إنشاء مهمة Demo. البيانات موسومة تجريبية ولا تمثل استنتاج مراجعة.');
   }
 
@@ -74,7 +89,7 @@ export default function App() {
       });
       event.currentTarget.reset();
       await refreshEngagements(result.id);
-      setWorkspace('audit');
+      navigateModule('data');
     }, 'تم إنشاء المهمة بحالة draft. ابدأ من القبول قبل التخطيط.');
   }
 
@@ -97,7 +112,9 @@ export default function App() {
 
   return <AppShell
     active={workspace}
-    onNavigate={setWorkspace}
+    activeModule={activeModule}
+    onNavigate={navigateWorkspace}
+    onModuleNavigate={navigateModule}
     engagements={engagements}
     selectedId={selectedId}
     onSelectEngagement={(id) => { selectEngagement(id).catch((cause) => setError(describeError(cause))); }}
@@ -123,11 +140,16 @@ export default function App() {
     {selectedId && (!legacy || !commandCenter) && <div className="loading-stage"><div className="loading-orb"/><strong>تحميل المهمة من D1…</strong></div>}
 
     {selectedId && legacy && commandCenter && <>
-      {workspace === 'home' && <CommandCenter data={commandCenter} onNavigate={setWorkspace}/>} 
-      {workspace === 'audit' && <AuditWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
-      {workspace === 'analytics' && <AnalyticsCenter commandCenter={commandCenter} legacy={legacy}/>} 
-      {workspace === 'council' && <CouncilWorkspace engagementId={selectedId} legacy={legacy} perform={perform}/>} 
-      {workspace === 'more' && <MoreWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} accessToken={accessToken} onSaveToken={saveToken}/>} 
+      {activeModule === 'command-center' && <CommandCenter data={commandCenter} onNavigate={navigateWorkspace}/>} 
+      {['data','planning','risks','workpapers','pbc'].includes(activeModule) && <>
+        <AuditWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>
+        <ReviewNotesPanel engagementId={selectedId} perform={perform} busy={busy} onChanged={() => refreshData(selectedId)}/>
+      </>}
+      {activeModule === 'journal' && <JournalWorkspace engagementId={selectedId} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
+      {activeModule === 'rounds' && <RoundsWorkspace engagementId={selectedId} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
+      {activeModule === 'council' && <CouncilWorkspace engagementId={selectedId} legacy={legacy} perform={perform}/>} 
+      {(activeModule === 'standards' || activeModule === 'knowledge') && <StandardsWorkspace engagementId={selectedId} legacy={legacy} perform={perform} mode={activeModule} busy={busy}/>} 
+      {(activeModule === 'evidence' || activeModule === 'reports') && <MoreWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} accessToken={accessToken} onSaveToken={saveToken}/>} 
     </>}
   </AppShell>;
 }

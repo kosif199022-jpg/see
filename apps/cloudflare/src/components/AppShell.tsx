@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   DESKTOP_MODULES,
   MOBILE_GROUPS,
-  workspaceForDesktopModule,
   type DesktopModuleId,
 } from '../navigation';
 import type { Engagement, PrimaryWorkspace, ReadinessBlocker } from '../types';
@@ -14,17 +13,11 @@ const THEMES = [
 
 type ThemeId = (typeof THEMES)[number]['id'];
 
-const DEFAULT_MODULE: Record<PrimaryWorkspace, DesktopModuleId> = {
-  home: 'command-center',
-  audit: 'data',
-  analytics: 'journal',
-  council: 'council',
-  more: 'evidence',
-};
-
 export function AppShell({
   active,
+  activeModule,
   onNavigate,
+  onModuleNavigate,
   engagements,
   selectedId,
   onSelectEngagement,
@@ -34,7 +27,9 @@ export function AppShell({
   children,
 }: {
   active: PrimaryWorkspace;
+  activeModule: DesktopModuleId;
   onNavigate: (value: PrimaryWorkspace) => void;
+  onModuleNavigate: (value: DesktopModuleId) => void;
   engagements: Engagement[];
   selectedId: string;
   onSelectEngagement: (id: string) => void;
@@ -46,7 +41,6 @@ export function AppShell({
   const [commandOpen, setCommandOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [alertsOpen, setAlertsOpen] = useState(false);
-  const [activeModule, setActiveModule] = useState<DesktopModuleId>(() => DEFAULT_MODULE[active]);
   const [theme, setTheme] = useState<ThemeId>(() => {
     const stored = localStorage.getItem('see_theme');
     return stored === 'dark' ? 'dark' : 'light';
@@ -56,12 +50,6 @@ export function AppShell({
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('see_theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    if (workspaceForDesktopModule(activeModule) !== active) {
-      setActiveModule(DEFAULT_MODULE[active]);
-    }
-  }, [active, activeModule]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -90,15 +78,13 @@ export function AppShell({
   }
 
   function goGroup(id: PrimaryWorkspace) {
-    setActiveModule(DEFAULT_MODULE[id]);
     onNavigate(id);
     setCommandOpen(false);
     setQuery('');
   }
 
   function goModule(id: DesktopModuleId) {
-    setActiveModule(id);
-    onNavigate(workspaceForDesktopModule(id));
+    onModuleNavigate(id);
     setCommandOpen(false);
     setQuery('');
   }
