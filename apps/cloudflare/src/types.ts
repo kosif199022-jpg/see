@@ -78,6 +78,67 @@ export type ReviewNote = Record<string, any> & {
 export type CouncilRun = Record<string, any> & { id: string; task: string; status: string };
 export type ReportVersion = Record<string, any> & { id: string; version: number; status: string };
 
+export type JournalReviewRun = Record<string, any> & {
+  id: string;
+  engine_version: string;
+  source_version: string;
+  total_entries: number;
+  flagged_entries: number;
+};
+export type JournalReviewItem = Record<string, any> & {
+  id: string;
+  signal_code: string;
+  severity: string;
+  rationale: string;
+  status: string;
+  entry_number: string;
+  entry_date?: string | null;
+  account_code: string;
+  account_name?: string;
+  debit_minor: number;
+  credit_minor: number;
+  description?: string;
+  user_name?: string | null;
+  disposition?: string | null;
+  decision_rationale?: string | null;
+  reviewed_by?: string | null;
+};
+export type SamplingRun = Record<string, any> & {
+  id: string;
+  population_source: string;
+  method: string;
+  seed: number;
+  selected_ids_json: string;
+  engine_version: string;
+};
+export type AuditRound = {
+  code: string;
+  title: string;
+  objective: string;
+  decision: (Record<string, any> & { status: string; rationale: string; actor: string; version: number }) | null;
+};
+export type StandardReference = {
+  code: string;
+  titleAr: string;
+  sourceFamily: string;
+  status: 'current' | 'adopted' | 'transition' | 'historical' | 'training' | 'local';
+  version?: string;
+  effectiveDate?: string;
+  sourceNote?: string;
+  note: string;
+  authority: 'reference';
+};
+export type StandardUsage = Record<string, any> & {
+  id: string;
+  standard_code: string;
+  source_family: string;
+  source_version?: string | null;
+  target_type: string;
+  target_id: string;
+  rationale?: string;
+  actor: string;
+};
+
 export type TraceGraph = {
   nodes: Array<{ id: string; recordId: string; type: string; label: string; status?: string; sha256?: string }>;
   edges: Array<{ id: string; from: string; to: string; relation: string }>;
