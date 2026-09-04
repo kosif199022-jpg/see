@@ -114,7 +114,7 @@ export type SamplingRun = Record<string, any> & {
 export type AuditRound = {
   code: string;
   title: string;
-  objective: string;
+  gate: string;
   decision: (Record<string, any> & { status: string; rationale: string; actor: string; version: number }) | null;
 };
 export type StandardReference = {
