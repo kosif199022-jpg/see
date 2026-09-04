@@ -1,4 +1,5 @@
 import legacy from './index';
+import { persistKosifDemoRecords } from './phase-a/demo-kosif-seed';
 import { apiError, handlePhaseA } from './phase-a/router';
 import type { PhaseAEnv } from './phase-a/types';
 
@@ -28,6 +29,20 @@ export default {
       }
     }
 
-    return legacy.fetch(request, env);
+    const legacyResponse = await legacy.fetch(request, env);
+    if (path === '/api/demo' && request.method === 'POST' && legacyResponse.ok) {
+      try {
+        const payload = await legacyResponse.clone().json() as { id?: string };
+        if (payload.id) await persistKosifDemoRecords(env, payload.id);
+      } catch (cause) {
+        console.error(cause);
+        return apiError(
+          'DEMO_KOSIF_SEED_FAILED',
+          cause instanceof Error ? cause.message : 'Failed to seed KOSIF demo records',
+          500,
+        );
+      }
+    }
+    return legacyResponse;
   },
 } satisfies ExportedHandler<PhaseAEnv>;
