@@ -63,6 +63,11 @@ export interface RiskClosureInput {
   rationale: string;
 }
 
+export interface ReviewNoteClearInput {
+  actorRole: AuditActorRole;
+  actor: string;
+}
+
 const ENGAGEMENT_NEXT: Record<EngagementStatus, readonly EngagementStatus[]> = {
   draft: ['acceptance', 'on_hold'],
   acceptance: ['planning', 'on_hold'],
@@ -200,6 +205,16 @@ export function validateRiskClosure(input: RiskClosureInput): TransitionDecision
   }
   if (!input.rationale.trim()) {
     return deny('RISK_CLOSURE_RATIONALE_REQUIRED');
+  }
+  return allow();
+}
+
+export function validateReviewNoteClear(input: ReviewNoteClearInput): TransitionDecision {
+  if (input.actorRole === 'ai_agent' || input.actorRole === 'client') {
+    return deny('REVIEW_NOTE_HUMAN_REQUIRED');
+  }
+  if (!input.actor.trim()) {
+    return deny('REVIEW_NOTE_ACTOR_REQUIRED');
   }
   return allow();
 }
