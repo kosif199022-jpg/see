@@ -1,0 +1,11 @@
+{
+  "name": "see-ai-audit-operating-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Advanced AI financial audit operating system",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "echo 'workspace ready'",
+    "test": "echo 'tests pending'"
+  }
+}
