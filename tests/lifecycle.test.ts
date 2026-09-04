@@ -5,6 +5,7 @@ import {
   validatePbcTransition,
   validateWorkpaperTransition,
   validateCouncilTransition,
+  validateRiskClosure,
 } from '../packages/domain/src/lifecycle.ts';
 
 test('engagement cannot skip acceptance and planning', () => {
@@ -39,4 +40,17 @@ test('Council cannot mark itself human reviewed without human actor', () => {
   const result = validateCouncilTransition('synthesized', 'human_reviewed', { actorRole: 'ai_agent' });
   assert.equal(result.allowed, false);
   assert.ok(result.blockers.includes('HUMAN_REVIEW_REQUIRED'));
+});
+
+test('high-risk closure requires an authorized human and rationale', () => {
+  const ai = validateRiskClosure({ actorRole: 'ai_agent', rationale: 'AI proposes closure' });
+  assert.equal(ai.allowed, false);
+  assert.ok(ai.blockers.includes('RISK_CLOSURE_HUMAN_REQUIRED'));
+
+  const noRationale = validateRiskClosure({ actorRole: 'manager', rationale: '   ' });
+  assert.equal(noRationale.allowed, false);
+  assert.ok(noRationale.blockers.includes('RISK_CLOSURE_RATIONALE_REQUIRED'));
+
+  const manager = validateRiskClosure({ actorRole: 'manager', rationale: 'Procedure completed and reviewed.' });
+  assert.equal(manager.allowed, true);
 });
