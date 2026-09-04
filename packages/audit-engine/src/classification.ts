@@ -1,4 +1,4 @@
-import { normalizeAuditText } from './text-normalization';
+import { normalizeAuditText } from './text-normalization.ts';
 
 export const CLASSIFICATION_ENGINE_VERSION = 'SEE-KOSIF-CLASSIFICATION-v1' as const;
 
