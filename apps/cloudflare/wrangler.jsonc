@@ -1,0 +1,16 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "see-audit",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-09-04",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [{ "binding": "DB" }],
+  "r2_buckets": [{ "binding": "EVIDENCE" }],
+  "vars": {
+    "ALLOW_PUBLIC_DEMO": "true"
+  }
+}
