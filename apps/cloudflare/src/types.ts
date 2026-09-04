@@ -42,6 +42,10 @@ export type CommandCenter = {
     openFindings: number;
     procedures: number;
     completedProcedureRuns: number;
+    journalFlagged: number;
+    journalPendingReview: number;
+    traceHealth: { evidence: number; linked: number; gaps: number };
+    roundsReady: { completed: number; attention: number; total: 10; ready: boolean };
   };
   stages: Array<{ id: string; state: string }>;
   analytics: {
