@@ -1,0 +1,13 @@
+name: SEE CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check repository
+        run: echo "SEE Audit System validation"
