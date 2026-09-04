@@ -79,6 +79,7 @@ export const phaseAApi = {
   pbc: (engagementId: string) => api<{ requests: PbcRequest[] }>(`/api/v1/engagements/${engagementId}/pbc`),
   createPbc: (engagementId: string, input: Record<string, unknown>) => api(`/api/v1/engagements/${engagementId}/pbc`, { method: 'POST', body: JSON.stringify(input) }),
   transitionPbc: (id: string, input: Record<string, unknown>) => api(`/api/v1/pbc/${id}/transitions`, { method: 'POST', body: JSON.stringify(input) }),
+  closeRisk: (id: string, input: Record<string, unknown>) => api(`/api/v1/risks/${id}/close`, { method: 'POST', body: JSON.stringify(input) }),
   procedures: (engagementId: string) => api<{ procedures: Procedure[] }>(`/api/v1/engagements/${engagementId}/procedures`),
   createProcedure: (engagementId: string, input: Record<string, unknown>) => api(`/api/v1/engagements/${engagementId}/procedures`, { method: 'POST', body: JSON.stringify(input) }),
   runProcedure: (id: string, input: Record<string, unknown>) => api(`/api/v1/procedures/${id}/runs`, { method: 'POST', body: JSON.stringify(input) }),
