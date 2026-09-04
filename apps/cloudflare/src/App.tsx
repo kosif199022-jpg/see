@@ -6,6 +6,7 @@ import { AuditWorkspace } from './components/AuditWorkspace';
 import { CommandCenter } from './components/CommandCenter';
 import { CouncilWorkspace } from './components/CouncilWorkspace';
 import { MoreWorkspace } from './components/MoreWorkspace';
+import { ReviewNotesPanel } from './components/ReviewNotesPanel';
 import type { CommandCenter as CommandCenterDto, Engagement, LegacyDashboard, PrimaryWorkspace } from './types';
 
 function describeError(cause: unknown) {
@@ -124,7 +125,10 @@ export default function App() {
 
     {selectedId && legacy && commandCenter && <>
       {workspace === 'home' && <CommandCenter data={commandCenter} onNavigate={setWorkspace}/>} 
-      {workspace === 'audit' && <AuditWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
+      {workspace === 'audit' && <>
+        <AuditWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>
+        <ReviewNotesPanel engagementId={selectedId} perform={perform} busy={busy} onChanged={() => refreshData(selectedId)}/>
+      </>} 
       {workspace === 'analytics' && <AnalyticsCenter commandCenter={commandCenter} legacy={legacy}/>} 
       {workspace === 'council' && <CouncilWorkspace engagementId={selectedId} legacy={legacy} perform={perform}/>} 
       {workspace === 'more' && <MoreWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} accessToken={accessToken} onSaveToken={saveToken}/>} 
