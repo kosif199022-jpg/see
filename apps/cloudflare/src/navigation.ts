@@ -63,6 +63,18 @@ export function workspaceForDesktopModule(id: DesktopModuleId): PrimaryWorkspace
   return desktopModule(id).group;
 }
 
+const DEFAULT_MODULES: Record<PrimaryWorkspace, DesktopModuleId> = {
+  home: 'command-center',
+  audit: 'data',
+  analytics: 'journal',
+  council: 'council',
+  more: 'evidence',
+};
+
+export function defaultModuleForWorkspace(workspace: PrimaryWorkspace): DesktopModuleId {
+  return DEFAULT_MODULES[workspace];
+}
+
 export const AUDIT_STAGE_LABELS: ReadonlyArray<[string, string]> = [
   ['acceptance', 'القبول والاستقلال'],
   ['planning', 'التخطيط'],
