@@ -6,6 +6,7 @@ import {
   validateWorkpaperTransition,
   validateCouncilTransition,
   validateRiskClosure,
+  validateReviewNoteClear,
 } from '../packages/domain/src/lifecycle.ts';
 
 test('engagement cannot skip acceptance and planning', () => {
@@ -53,4 +54,16 @@ test('high-risk closure requires an authorized human and rationale', () => {
 
   const manager = validateRiskClosure({ actorRole: 'manager', rationale: 'Procedure completed and reviewed.' });
   assert.equal(manager.allowed, true);
+});
+
+test('review-note clearance requires a named human reviewer', () => {
+  const ai = validateReviewNoteClear({ actorRole: 'ai_agent', actor: 'see-council' });
+  assert.equal(ai.allowed, false);
+  assert.ok(ai.blockers.includes('REVIEW_NOTE_HUMAN_REQUIRED'));
+
+  const unnamed = validateReviewNoteClear({ actorRole: 'manager', actor: '   ' });
+  assert.equal(unnamed.allowed, false);
+  assert.ok(unnamed.blockers.includes('REVIEW_NOTE_ACTOR_REQUIRED'));
+
+  assert.equal(validateReviewNoteClear({ actorRole: 'manager', actor: 'pilot-manager' }).allowed, true);
 });
