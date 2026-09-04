@@ -50,4 +50,8 @@ export interface CommandCenterMetrics {
   openFindings: number;
   procedures: number;
   completedProcedureRuns: number;
+  journalFlagged: number;
+  journalPendingReview: number;
+  roundsReady: number;
+  traceHealth: number;
 }
