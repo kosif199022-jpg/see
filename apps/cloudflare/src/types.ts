@@ -62,6 +62,15 @@ export type CommandCenter = {
 export type PbcRequest = Record<string, any> & { id: string; title: string; status: string; priority: string };
 export type Procedure = Record<string, any> & { id: string; title: string; status: string; objective: string };
 export type Workpaper = Record<string, any> & { id: string; title: string; status: string; current_version: number };
+export type ReviewNote = Record<string, any> & {
+  id: string;
+  note: string;
+  status: 'open' | 'cleared' | string;
+  workpaper_id?: string | null;
+  workpaper_title?: string | null;
+  created_by: string;
+  cleared_by?: string | null;
+};
 export type CouncilRun = Record<string, any> & { id: string; task: string; status: string };
 export type ReportVersion = Record<string, any> & { id: string; version: number; status: string };
 
