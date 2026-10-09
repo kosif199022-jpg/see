@@ -1,11 +1,12 @@
 """KOSIF CPU Render: safe job-spec parser; not a code executor."""
-import json,os,re,sys
+import json,os,re,sys,subprocess
 from pathlib import Path
 
 def load_event(p):
     e=json.loads(Path(p).read_text())
     files=e.get("head_commit",{}).get("added",[])+e.get("head_commit",{}).get("modified",[])
-    files=[f for f in files if re.fullmatch(r"render_jobs/[a-z0-9_-]{1,64}\.json",f)]
+    git_changed=subprocess.check_output(['git','show','--pretty=format:','--name-only','HEAD'],text=True).splitlines()
+    files=[f for f in set(files+git_changed) if re.fullmatch(r"render_jobs/[a-z0-9_-]{1,64}\.json",f)]
     if not files:
         return {"scene":"ocean-shark-day","seconds":3,"fps":24,"width":480,"height":270}
     if len(files)!=1:
