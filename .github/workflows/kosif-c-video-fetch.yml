@@ -1,0 +1,41 @@
+name: KOSIF C Free URL to Video
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'video_jobs/**'
+permissions:
+  contents: read
+jobs:
+  download:
+    name: Public video to iPhone MP4
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install yt-dlp and FFmpeg
+        run: |
+          python -m pip install -U 'yt-dlp[default,curl-cffi]'
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: URL validation security tests
+        run: python -m unittest discover -s tools/cloud_video/tests -p 'test_*.py'
+      - name: Verify exact new job from triggering commit
+        run: python tools/cloud_video/select_job.py
+      - name: Download and normalize public video
+        run: python tools/cloud_video/fetch.py "$KOSIF_JOB_FILE"
+      - name: Verify MP4 and integrity receipt
+        run: |
+          test -s output/KOSIF-C-Video.mp4
+          test -s output/KOSIF-C-Video-receipt.json
+          ffprobe -v error -show_entries stream=codec_name -show_entries format=duration -of json output/KOSIF-C-Video.mp4
+      - name: Upload validated MP4
+        uses: actions/upload-artifact@v4
+        with:
+          name: kosif-c-video
+          path: output/
+          retention-days: 7
