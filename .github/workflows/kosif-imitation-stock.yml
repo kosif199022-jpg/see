@@ -18,7 +18,7 @@ jobs:
       - name: Install HTTP client and FFmpeg
         run: |
           python -m pip install 'requests>=2.30,<3'
-          command -v ffmpeg
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - name: Download authorized stock and prepare vertical motion clips
         run: python tools/imitate/pull_stock.py
       - name: Upload source footage and attribution manifest
