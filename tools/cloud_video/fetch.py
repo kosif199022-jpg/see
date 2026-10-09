@@ -48,6 +48,8 @@ def main():
             except subprocess.TimeoutExpired:continue
             media=[x for x in work.iterdir() if x.suffix.lower() in ('.mp4','.mkv','.webm','.mov')]
             if p.returncode==0 and len(media)==1 and 0<media[0].stat().st_size<=CAP:break
+            if p.returncode!=0:
+                print('DOWNLOAD_DIAGNOSTIC attempt '+str(i+1)+' return '+str(p.returncode)+' '+p.stderr[-850:],flush=True)
         else:raise RuntimeError('Video unavailable, protected, oversized or unsupported')
         src=media[0]
         inspect(src)
