@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -23,8 +25,29 @@ jobs:
           command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
       - name: Find one new job (never run arbitrary code)
         run: |
-          JOB=$(git show --pretty=format: --name-only HEAD | grep -E '^video_jobs/[a-z0-9_-]{1,64}\.json$' | head -1)
-          test -n "$JOB"
+          # A depth-1 shallow checkout treats HEAD as a root commit, listing every old job.
+          # Fetch parent and select only the file added by this exact trigger commit.
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          JOBS=$(git diff-tree --no-commit-id --name-only -r HEAD | grep -E '^video_jobs/[a-z0-9_-]{1,64}\.json
+          echo "KOSIF_JOB_FILE=$JOB" >> "$GITHUB_ENV"
+      - name: Download and normalize public video
+        run: |
+          python tools/cloud_video/fetch.py "$KOSIF_JOB_FILE"
+      - name: Verify video and receipt
+        run: |
+          test -s output/KOSIF-C-Video.mp4
+          test -s output/KOSIF-C-Video-receipt.json
+          ffprobe -v error -show_entries stream=codec_name -show_entries format=duration -of json output/KOSIF-C-Video.mp4
+      - name: Upload validated MP4
+        uses: actions/upload-artifact@v4
+        with:
+          name: kosif-c-video-${{ github.run_id }}
+          path: output/
+          retention-days: 7
+ || true)
+          test "$(printf '%s\n' "$JOBS" | sed '/^$/d' | wc -l)" -eq 1
+          JOB="$JOBS"
+          test -s "$JOB"
           echo "KOSIF_JOB_FILE=$JOB" >> "$GITHUB_ENV"
       - name: Download and normalize public video
         run: |
