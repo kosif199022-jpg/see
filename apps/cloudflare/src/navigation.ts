@@ -13,7 +13,8 @@ export type DesktopModuleId =
   | 'rounds'
   | 'council'
   | 'reports'
-  | 'knowledge';
+  | 'knowledge'
+  | 'superpowers';
 
 export type DesktopModule = {
   id: DesktopModuleId;
@@ -36,6 +37,7 @@ export const DESKTOP_MODULES: ReadonlyArray<DesktopModule> = [
   { id: 'rounds', label: 'الجولات العشر', icon: '↻', description: 'A01–A10 وبوابات التنفيذ', group: 'audit' },
   { id: 'council', label: 'مجلس المراجعين', icon: '◈', description: 'مراجعة استشارية متعددة الزوايا', group: 'council' },
   { id: 'reports', label: 'التقارير والتصدير', icon: '▧', description: 'إصدارات وتقارير واعتماد بشري', group: 'more' },
+  { id: 'superpowers', label: 'قدرات SEE', icon: '✦', description: 'اكتشاف وترشيح القدرات الموثقة', group: 'more' },
   { id: 'knowledge', label: 'مسارات المعرفة', icon: '▷', description: 'معرفة تطبيقية مرتبطة بالعمل', group: 'more' },
 ];
 
@@ -50,7 +52,7 @@ export const MOBILE_GROUPS: ReadonlyArray<{
   { id: 'audit', label: 'المراجعة', icon: '✓', description: 'دورة المراجعة المهنية', modules: ['data', 'planning', 'risks', 'workpapers', 'pbc', 'rounds'] },
   { id: 'analytics', label: 'التحليلات', icon: '⌁', description: 'تحليلات ومؤشرات حتمية', modules: ['journal'] },
   { id: 'council', label: 'المجلس', icon: '◇', description: 'مراجعة استشارية محكومة', modules: ['council'] },
-  { id: 'more', label: 'المزيد', icon: '•••', description: 'الأدلة والمعايير والتقارير', modules: ['evidence', 'standards', 'reports', 'knowledge'] },
+  { id: 'more', label: 'المزيد', icon: '•••', description: 'الأدلة والمعايير والتقارير', modules: ['evidence', 'standards', 'reports', 'knowledge', 'superpowers'] },
 ];
 
 export const PRIMARY_NAV = MOBILE_GROUPS;

@@ -1,4 +1,5 @@
 import legacy from './index';
+import {superpowersManifest,suggestSuperpowers} from '../../../packages/superpowers/src/index';
 import { persistKosifDemoRecords } from './phase-a/demo-kosif-seed';
 import { apiError, handlePhaseA } from './phase-a/router';
 import type { PhaseAEnv } from './phase-a/types';
@@ -15,6 +16,17 @@ export default {
     if (path.startsWith('/api/v1/')) {
       if (phaseAAuthRequired(request, env)) {
         return apiError('UNAUTHORIZED', 'Unauthorized', 401);
+      }
+      if (path === '/api/v1/superpowers' && request.method === 'GET') {
+        return Response.json(superpowersManifest(), {headers:{'Cache-Control':'no-store'}});
+      }
+      if (path === '/api/v1/superpowers/suggest' && request.method === 'GET') {
+        const task = new URL(request.url).searchParams.get('task') ?? '';
+        try {
+          return Response.json(suggestSuperpowers(task), {headers:{'Cache-Control':'no-store'}});
+        } catch (cause) {
+          return apiError('INVALID_SUPERPOWER_QUERY', cause instanceof Error ? cause.message : 'Invalid task', 400);
+        }
       }
       try {
         const phaseA = await handlePhaseA(request, env);

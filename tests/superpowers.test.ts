@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {superpowersManifest,suggestSuperpowers} from '../packages/superpowers/src/index.ts';
+test('manifest is explicitly advisory only',()=>{const m=superpowersManifest();
+  assert.equal(m.mode,'advisory_only');assert.equal(m.executorAvailableInWorker,false);
+  assert.equal(m.fullCatalogLoaded,false);assert.ok(m.records>0);});
+test('Arabic development task includes code',()=>{const r=suggestSuperpowers('تطوير كود المستودع واختباره');
+  assert.ok(r.suggested.some(x=>x.id==='CODE-01'));assert.ok(r.suggested.every(x=>x.execution==='not_run'));});
+test('security category uses existing IDs',()=>{assert.ok(suggestSuperpowers('حماية توكن ومفاتيح secret').suggested.some(x=>x.id==='SEC-05'));});
+test('Arabic vowel and hamza normalization',()=>{assert.ok(suggestSuperpowers('أَدَوَات').suggested.some(x=>x.id==='SELF-05'));});
+test('unknown does not fabricate matches',()=>{assert.deepEqual(suggestSuperpowers('xyzzyqpl').suggested,[]);});
+test('input size and count limits',()=>{assert.throws(()=>suggestSuperpowers(' '),/TASK_REQUIRED/);
+  assert.throws(()=>suggestSuperpowers('x'.repeat(241)),/TASK_TOO_LONG/);
+  assert.throws(()=>suggestSuperpowers('اختبار',11),/INVALID_LIMIT/);});
+test('only source references, not execution claims',()=>{const r=suggestSuperpowers('مستودع أدوات كود بيانات حماية تحقق توازي');
+  assert.ok(r.suggested.every(x=>x.source.startsWith('https://github.com/kosif199022-jpg/kosif-tool/blob/main/')));
+  assert.ok(r.suggested.every(x=>x.evidence==='documented_only'));});

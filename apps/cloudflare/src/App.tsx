@@ -9,6 +9,7 @@ import { MoreWorkspace } from './components/MoreWorkspace';
 import { ReviewNotesPanel } from './components/ReviewNotesPanel';
 import { RoundsWorkspace } from './components/RoundsWorkspace';
 import { StandardsWorkspace } from './components/StandardsWorkspace';
+import { SuperpowersWorkspace } from './components/SuperpowersWorkspace';
 import { defaultModuleForWorkspace, workspaceForDesktopModule, type DesktopModuleId } from './navigation';
 import type { CommandCenter as CommandCenterDto, Engagement, LegacyDashboard, PrimaryWorkspace } from './types';
 
@@ -147,6 +148,7 @@ export default function App() {
       </>}
       {activeModule === 'journal' && <JournalWorkspace engagementId={selectedId} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
       {activeModule === 'rounds' && <RoundsWorkspace engagementId={selectedId} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} busy={busy}/>} 
+      {activeModule === 'superpowers' && <SuperpowersWorkspace/>}
       {activeModule === 'council' && <CouncilWorkspace engagementId={selectedId} legacy={legacy} perform={perform}/>} 
       {(activeModule === 'standards' || activeModule === 'knowledge') && <StandardsWorkspace engagementId={selectedId} legacy={legacy} perform={perform} mode={activeModule} busy={busy}/>} 
       {(activeModule === 'evidence' || activeModule === 'reports') && <MoreWorkspace engagementId={selectedId} legacy={legacy} commandCenter={commandCenter} perform={perform} refresh={() => refreshData(selectedId)} accessToken={accessToken} onSaveToken={saveToken}/>} 
